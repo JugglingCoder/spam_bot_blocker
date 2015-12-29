@@ -26,7 +26,7 @@ Installation
 - Install this module using the official Backdrop CMS instructions at
   https://backdropcms.org/guide/modules
 
-1.) Download and copy the module into your "/modules" folder
+1.) Download and copy the module into your "/modules" folder<br />
 2.) In order for the "Spam Bot Blocker" CAPTCHA to be enabled, the "CAPTCHA"
      module is required: https://backdropcms.org/project/captcha
 3.) Enable the module at "Functionality > Modules" (/admin/modules/list)
