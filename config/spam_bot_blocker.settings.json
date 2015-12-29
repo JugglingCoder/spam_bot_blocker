@@ -1,0 +1,17 @@
+{
+    "_config_name": "spam_bot_blocker.settings",
+    "fails": 3,
+    "purge_deny": 300,
+    "redirect_type": 1,
+    "redirect": "http://www.google.com/",
+    "use_honey": 1,
+    "honey_name": "website",
+    "use_ban": 1,
+    "max_fails_ban": 3,
+    "redirect_ban_type": 1,
+    "redirect_ban": "http://www.google.com/",
+    "expose_errors": 0,
+    "use_cdn": 2,
+    "cnd_site_key": 0,
+    "cdn_language": 15
+}

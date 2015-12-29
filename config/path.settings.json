@@ -1,0 +1,4 @@
+{
+		"_config_name": "path.settings",
+    "spam_bot_blocker_pattern": "spam-bot-blocker/[node:title]"
+}

@@ -1,0 +1,17 @@
+{
+    "_config_name": "image.style.spam_bot_blocker_image.json",
+    "storage": 1,
+    "module": "spam_bot_blocker",
+    "label": "Spam Bot Blocker Image",
+    "name": "spam_bot_blocker_image",
+    "effects": [
+        {
+						"name": "image_scale_and_crop",
+            "data": {
+							"width": "300",
+							"height": "250"
+            },
+						"weight": 1
+        }
+    ]
+}

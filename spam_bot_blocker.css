@@ -1,0 +1,43 @@
+div#spam_bot_blocker_hachimitsu{display:none;}
+div#sbb_wrapper{
+margin:0;
+width:100%;
+max-width: 960px;
+border:0px solid red;
+margin:0 auto;
+}
+div#sbb_wrapper img{max-width:100%;}
+p#spam_bot_blocker_challenge_description{
+font-size:90%;
+font-style:italic;
+text-align:center;
+color:grey;
+}
+div#sbb_wrapper p#spam_bot_blocker_question{
+margin:0;padding:0;
+font-size:130%;
+margin-left:10px;
+margin-bottom:10px;
+}
+div#sbb_wrapper .form-item-captcha-response label[for="edit-captcha-response"]{
+display:none;
+}
+div#sbb_wrapper p{margin:0;padding:0;line-height:100%;}
+div#sbb_wrapper p.sbb_col_header_p{margin:5px;}
+.sbb_col_header{color:grey;font-style:italic;font-size:12px;}
+.sbb_houkoku{font-size:12px;font-weight:bold;}
+.sbb_center{text-align:center;}
+div#sbb_wrapper .controls{margin:0;padding:0;margin-left:10px;}
+form.webform-client-form fieldset.captcha{padding:0;}
+form.webform-client-form fieldset.captcha legend{margin-left:10px;}
+form.webform-client-form fieldset.captcha .fieldset-description{padding:10px;}
+div#sbb_wrapper #sbb_html_col1,
+div#sbb_wrapper #sbb_html_col2
+{width:300px;float:left;}
+div#sbb_wrapper #sbb_html_col1{margin-left:1px;}
+div#sbb_wrapper #sbb_html_col3{width:285px;float:left;padding-left:5px;}
+/* ***** RADIOS RESET ********************* */
+div#sbb_wrapper .form-item,
+div#sbb_wrapper .form-actions {
+margin:0;padding:0;
+}

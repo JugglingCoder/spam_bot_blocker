@@ -1,0 +1,1160 @@
+<?php
+/**
+ * @file
+ * Spam Bot Blocker Module
+ */
+ 
+/*
+=======================================
+Key Functions:
+Notepad++
+highlight (or double click), press Ctrl+F3 to jump to next
+Ctrl+home to return to top
+
+spam_bot_blocker_config_info
+spam_bot_blocker_permission
+spam_bot_blocker_theme
+spam_bot_blocker_menu
+// REMOVED in BackDrop > spam_bot_blocker_image_default_styles
+spam_bot_blocker_captcha
+spam_bot_blocker_form_alter
+spam_bot_blocker_node_presave
+spam_bot_blocker_generate_form
+spam_bot_blocker_custom_validation
+spam_bot_blocker_cron
+spam_bot_blocker_send_bots_packing
+spam_bot_blocker_seconds_to_time
+spam_bot_blocker_get_challenge
+spam_bot_blocker_get_language
+spam_bot_blocker_get_ip
+spam_bot_blocker_get_sbbban
+spam_bot_blocker_post
+
+Key HTML:
+<div id="sbb_wrapper">     | Starts the "Wrapping Div" for the Challenge
+START, "TERMS OF USE" NOTICE     | Starts the Koukoku
+*/
+
+define('SBB_CHALLENGE_URL', 'http://www.spambotblocker.com/sbb-challenge/kd4dkS79d2nb3mc4djjd3');
+define('SBB_LANG_URL', 'http://www.spambotblocker.com/sbb-lang/jd2kds23f78jd7jd73k');
+define('SBB_SEND_PACKING_URL', 'http://www.spambotblocker.com/sbb-send-packing/dk42dk2d29jk1');
+define('CODE', 'kf73SDf1212sfa13FGWWEV2342sdf23AD23sasdf234KKJHF234ADS2dqmcbeyufvj473jd73hcv783HDHDHNAAjjs2323');
+
+
+/**
+ * Implements hook_config_info().
+ */
+function spam_bot_blocker_config_info() {
+  /*
+	// If there are a large number of configuration files prefixed with this
+  // string, provide a "name_key" that will be read from the configuration file
+  // and used when listing the configuration file.
+  $prefixes['image.style'] = array(
+    'name_key' => 'name',
+    'label_key' => 'name',
+    'group' => t('Image styles'),
+  );
+	*/
+  // If this configuration file points to one particular file, a "name" key
+  // will display that exact string for that file.
+  $prefixes['spam_bot_blocker.settings.json'] = array(
+    'label' => t('Spam Bot Blocker Settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
+
+/**
+ * Implements hook_config_info().
+ */
+ /*
+function spam_bot_blocker_config_info() {
+  $prefixes['image.style.spam_bot_blocker_image'] = array(
+    'label' => t('Image Style'),
+    'group' => t('Spam Bot Blocker'),
+  );
+
+  return $prefixes;
+}
+*/
+
+
+/**
+ * Implements hook_permission().
+ */
+function spam_bot_blocker_permission() {
+  return array(
+    'administer spam_bot_blocker' => array(
+      'title' => t('Administer Spam Bot Blocker'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme()
+ *
+ * Add a template file for Spam Bot Blocker
+ * content type
+ */
+function spam_bot_blocker_theme($existing, $type, $theme, $path) {
+  return array(
+    'node__spam_bot_blocker' => array(
+      'variables' => '',
+      'template' => 'node--spam_bot_blocker',
+      'base hook' => 'node',
+      'path' => backdrop_get_path('module', 'spam_bot_blocker') . '/templates',
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function spam_bot_blocker_menu() {
+  $items = array();
+
+  $url = 'admin/config/people/captcha/spam_bot_blocker';
+  $items[$url] = array(
+    'title' => 'Spam Bot Blocker',
+    'description' => 'Spam Bot Blocker help.',
+    'page callback' => 'backdrop_get_form',
+    'page arguments' => array('spam_bot_blocker_admin_settings'),
+    'access arguments' => array('administer spam_bot_blocker'),
+    'access callback' => TRUE,
+    'file' => 'spam_bot_blocker_page.admin.inc',
+  );
+
+  $items['admin/config/people/captcha/spam_bot_blocker/general_settings'] = array(
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'title' => 'General Settings',
+    'weight' => 1,
+  );
+
+  // CDN Tab
+  $items['admin/config/people/captcha/spam_bot_blocker/cdn'] = array(
+    'title' => 'CDN',
+    'page callback' => 'backdrop_get_form',
+    'page arguments' => array('spam_bot_blocker_admin_cdn'),
+    'access arguments' => array('administer spam_bot_blocker'),
+    'type' => MENU_LOCAL_TASK,
+    'access callback' => TRUE,
+    'weight' => 10,
+    'file' => 'spam_bot_blocker_page.admin.inc',
+  );
+
+  // Banned IP's Tab
+  $items['admin/config/people/captcha/spam_bot_blocker/banned_ips'] = array(
+    'title' => 'Banned IP\'s',
+    'page callback' => 'backdrop_get_form',
+    'page arguments' => array('spam_bot_blocker_banned_ips'), 
+    'access arguments' => array('administer spam_bot_blocker'),
+    'type' => MENU_LOCAL_TASK,
+    'access callback' => TRUE,
+    'weight' => 11,
+    'file' => 'spam_bot_blocker_page.banned_ip_page.inc',
+  );
+  
+  // Help Tab
+  $items['admin/config/people/captcha/spam_bot_blocker/help'] = array(
+    'title' => 'Help',
+    'page callback' => 'spam_bot_blocker_help',
+    'access arguments' => array('administer spam_bot_blocker'),
+    'type' => MENU_LOCAL_TASK,
+    'access callback' => TRUE,
+    'weight' => 12,
+    'file' => 'spam_bot_blocker_page.help.inc',
+  );
+
+  // The defualt "Fail" page
+  $items['spam_bot_blocker/fail'] = array(
+    'title'             => 'CAPTCHA Fail',
+    'page callback'     => 'spam_bot_blocker_fail_page',
+    'access arguments'  => array('access content'),
+    'type'              => MENU_CALLBACK,
+    'file' => 'spam_bot_blocker_page.fail_page.inc',
+  );
+
+  // The defualt "Ban" page
+  $items['spam_bot_blocker/ban'] = array(
+    'title'             => 'CAPTCHA Ban',
+    'page callback'     => 'spam_bot_blocker_ban_page',
+    'access arguments'  => array('access content'),
+    'type'              => MENU_CALLBACK,
+    'file' => 'spam_bot_blocker_page.ban_page.inc',
+  );
+
+return $items;
+} // ===== END Function ==================
+
+/**
+ * Implements hook_default_styles().
+ *
+ * REMOVED IN BACKDROP for config files. See:
+ * spam_bot_blocker_config_info
+ */
+
+/*
+function spam_bot_blocker_image_default_styles() {
+  $styles = array();
+
+
+// This works perfectly, leaves no black on the top or bottom
+  $styles['spam_bot_blocker_image'] = array(
+    'name' => 'spam_bot_blocker_image',
+    'effects' => array(
+      7 => array(
+        'label' => 'Scale and crop',
+        'help' => 'Scale and crop will maintain the aspect-ratio of the original image, then crop the larger dimension. This is most useful for creating perfectly square thumbnails without stretching the image.',
+        'effect callback' => 'image_scale_and_crop_effect',
+        'dimensions callback' => 'image_resize_dimensions',
+        'form callback' => 'image_resize_form',
+        'summary theme' => 'image_resize_summary',
+        'module' => 'image',
+        'name' => 'image_scale_and_crop',
+        'data' => array(
+          'width' => 300,
+          'height' => 250,
+        ),
+        'weight' => 1,
+      ),
+    ),
+    'label' => 'spam_bot_blocker_image',
+  );
+
+  $styles['spam_bot_blocker_image'] = array(
+		'label' => 'Spam Bot Blocker Image',
+    'effects'   => array(
+      array(
+        'name'  => 'image_scale',
+        'data'  => array(
+					'width'     => 300,
+					'height'    => 250,
+					'upscale' => 1
+        ),
+        'weight'    => 0
+      )
+    )
+  );
+
+
+  return $styles;
+} // ===== END Function ==================
+*/
+
+/**
+ * Implements hook_captcha().
+ */
+function spam_bot_blocker_captcha($op, $captcha_type = '', $captcha_sid = NULL) {
+  switch ($op) {
+    case 'list':
+      return array('Spam Bot Blocker');
+    case 'generate':
+      if ($captcha_type == 'Spam Bot Blocker') {
+      // if using CDN,
+			// D7
+      // $db_location = variable_get('spam_bot_blocker_use_cdn', '');
+			// Actually... don't need the whole object here... $db_location = $config->get('use_cdn');
+			$db_location = config_get('spam_bot_blocker.settings','use_cdn');
+        if ($db_location == 2) {
+          // Get a random record from the DB
+          return spam_bot_blocker_generate_form($captcha_sid);
+        }
+        else{
+          $bs_url = $_SERVER['HTTP_HOST'];
+          return spam_bot_blocker_generate_form($captcha_sid);
+        }
+      }
+    break;
+  }
+} // ===== END Function ==================
+
+/**
+ * Implements hook_form_alter().
+ */
+function spam_bot_blocker_form_alter(&$form, $form_state, $form_id) {
+global $base_path;
+global $user;
+
+  if ($form["#form_id"] == 'spam_bot_blocker_node_form') {
+    
+    $form['bs_markup'] = array(
+    '#title' => t('Instructions'),
+    '#markup' => t('<h2>Instructions</h2><ul><li>Images <i>should be</i> exactly 300x250 pixels.<ul><li>If they are not "Exact" they will still upload and may be Ok but all images are automatically scaled and then cropped to 300x250. If your image scales and crops badly (not what you expect), it may be hard to view and answer the question. You may have to alter your "Question" to match the Scaled and Cropped image.</li><li>Hopefully in the future Backdrop will have a "Cropping Tool" module that can replace this standard image field and your images can be "Cropped" by you.</li></ul></li></ul>'),
+    '#weight' => 0,
+    );
+    
+    $form['body']['#access'] = FALSE;
+    $form['title']['#access'] = FALSE;
+    $form['title']['#required'] = FALSE;
+  }
+} // ===== End Function ===================
+
+/**
+ * Implements hook_node_presave().
+ */
+function spam_bot_blocker_node_presave($node) {
+	if((empty($node->title)) && ($node->type == 'spam_bot_blocker')){
+		$time = time();
+		$node->title = 'Spam Bot Blocker ' . $time;
+	}
+	//var_dump($node);die();
+  // Auto generate a title for created content
+  // is_new is !! important !! or else, adds
+  // a New Title to every old node!
+  /*
+	Backdrop Code that doesn't work on BackDrop
+	if ($node->is_new) {
+    if ($node->type == 'spam_bot_blocker') {
+      $time = time();
+      $node->title = 'Spam Bot Blocker ' . $time;
+    }
+  }
+	*/
+} // ===== End Function ===================
+
+/**
+ * Implements hook_generate_form().
+ */
+function spam_bot_blocker_generate_form($captcha_sid, $type = '') {
+global $base_path;
+global $base_url; // needed to parse site
+$spam_bot_blocker_img_location = '';
+$cdn_error = FALSE;
+
+// Load up the Settings File
+$config = config('spam_bot_blocker.settings');
+
+// D7
+// $expose_errors = variable_get('spam_bot_blocker_expose_errors', '');
+$expose_errors = $config->get('expose_errors');
+
+if ($expose_errors == 1) {
+  $expose_errors = TRUE;
+}
+
+$html_1 = '';
+$html_2 = '';
+$houkoku = '';
+$ip = '';
+$captcha = array();
+
+// CSS Moved to "spam_bot_blocker.info" so CSS available on template file too
+//backdrop_add_css(backdrop_get_path('module', 'spam_bot_blocker') . '/spam_bot_blocker.css');
+backdrop_add_js(backdrop_get_path('module', 'spam_bot_blocker') . '/spam_bot_blocker.js');
+
+// Call Custom Function to get IP Address
+$ip = spam_bot_blocker_get_ip();
+
+  if (!$ip) {
+    // Send Packing
+		// D7
+    // $bs_redirect_type = variable_get('spam_bot_blocker_redirect_ban_type', '');
+		$bs_redirect_type = $config->get('redirect_ban_type');
+    if ($bs_redirect_type == 1) {
+    $url = 'spam_bot_blocker/ban';
+    backdrop_goto($url);
+  }
+  elseif ($bs_redirect_type == 2) {
+    // D7
+		//$url = variable_get('spam_bot_blocker_redirect_ban', '');
+		$url = $config->get('redirect_ban');
+    backdrop_goto($url);
+  }
+  else{
+    spam_bot_blocker_send_bots_packing();
+  }
+  }
+
+// ===== START Check the sbbban table
+$result = spam_bot_blocker_get_sbbban($ip);
+
+// D7
+//$temp = variable_get('spam_bot_blocker_max_fails_ban', '');
+$temp = $config->get('max_fails_ban');
+
+foreach ($result as $row) {
+  if ($row->bs_count >= $temp) {
+  // If "Over" Send Packing
+  // D7
+	// $bs_redirect_type = variable_get('spam_bot_blocker_redirect_ban_type', '');
+	$bs_redirect_type = $config->get('redirect_ban_type');
+    if ($bs_redirect_type == 1) {
+      $url = 'spam_bot_blocker/ban';
+      backdrop_goto($url);
+    }
+    elseif ($bs_redirect_type == 2) {
+      // D7
+			//$url = variable_get('spam_bot_blocker_redirect_ban', '');
+			$url = $config->get('redirect_ban');
+      backdrop_goto($url);
+    }
+    else{
+      spam_bot_blocker_send_bots_packing();
+    }
+  } // End if
+} // End foreach
+
+
+// ===== START Check the sbbdeny table
+
+// Backdrop 7 argument substitution SQL
+$q = "";
+$q .= "SELECT i.ip AS bs_ip, i.timestamp AS bs_timestamp FROM {sbbdeny} i ";
+$q .= "WHERE :ip = i.ip";
+$result = db_query($q, array(':ip' => $ip));
+
+// D7
+// $spam_bot_blocker_purge_deny = variable_get('spam_bot_blocker_purge_deny', '');
+$spam_bot_blocker_purge_deny = $config->get('purge_deny');
+$spam_bot_blocker_purge_deny = time() - $spam_bot_blocker_purge_deny;
+
+foreach ($result as $row) {
+if ($row->bs_timestamp > $spam_bot_blocker_purge_deny) {
+  // Send Packing
+	// D7
+	//$bs_redirect_type = variable_get('spam_bot_blocker_redirect_type', '');
+	$bs_redirect_type = $config->get('redirect_type');
+  if ($bs_redirect_type == 1) {
+    $url = 'spam_bot_blocker/fail';
+  }
+  else{
+		// D7
+    // $url = variable_get('spam_bot_blocker_redirect', '');
+		$url = $config->get('redirect');
+  }
+  backdrop_goto($url);
+  } // End if
+} // End foreach
+
+// ===== START get CAPTCHA Challenge ====
+// D7
+// $db_location = variable_get('spam_bot_blocker_use_cdn', '');
+$db_location = $config->get('use_cdn');
+// 1 = use CDN
+// 2 = use local
+
+	$ok = FALSE;	
+
+if ($db_location == 2) {
+  // Local DB Query gets random node
+  $node = spam_bot_blocker_get_challenge();
+  $spam_bot_blocker_img_location = 'local';
+	$ok = TRUE;	
+}
+else{
+// Get Random Record from CDN
+// and build a "Temporary" 'node' object
+// D7
+// $site_key = variable_get('spam_bot_blocker_cnd_site_key', '');
+$site_key = $config->get('cnd_site_key');
+$site_key = trim($site_key);
+
+// execute queries here
+// DB Query gets random node
+// D7
+// $lang = variable_get('spam_bot_blocker_cdn_language', '');
+$lang = $config->get('cdn_language');
+$cat = 'any';
+$this_url = '';
+if(strpos($base_url, 'http://www.') !== FALSE) {
+  $this_url = str_replace('http://www.', '', $base_url);
+}
+elseif (strpos($base_url, 'http://') !== FALSE) {
+  $this_url = str_replace('http://', '', $base_url);
+}
+else{
+  $this_url = $base_url;
+}
+
+$temp = spam_bot_blocker_get_challenge('cdn', $lang, $cat, TRUE, $site_key, $this_url);
+$cdn_error = FALSE;
+// 1st Check, HTTP Request Response
+if ($temp == 'bad_response') {
+  $cdn_error = TRUE;
+  $error_message_cdn = '<p>Bad Response from SpamBotBlocker.com</p>';
+}
+else{ // Response is Good, continue
+  $ok = TRUE;  
+  $temp = explode('|-|', $temp);
+  if ($temp[0] == 'OK0001') {
+  $houkoku = $temp[1];
+  $challege = $temp[2];
+  $node = new stdClass();
+  $challege = explode('|', $challege);
+  foreach ($challege as $a) {
+    $b = explode('=', $a);
+    $node->{$b[0]}['und'][0]['value'] = $b[1];
+  }
+  unset($challege);
+  unset($temp);
+
+  }
+  else{ // There was an error processing
+    $cdn_error = TRUE;
+    $cdn_error_code = $temp[0];
+    $cdn_error_message = $temp[1];
+    $cdn_dev_vars = $temp[2];
+    $error_message_cdn = '<p>Error processing HTTP request on SpamBotBlocker.com</p>';
+    $error_message_cdn .= '<p>SpamBotBlocker.com Error Code: ' . $cdn_error_code . '</p>';
+    $error_message_cdn .= '<p>SpamBotBlocker.com Error: ' . $cdn_error_message . '</p>';
+    $error_message_cdn .= '<p>SpamBotBlocker.com Received Vars:</p>';
+    $error_message_cdn .= $cdn_dev_vars;
+  }
+} // End Original Response is Good
+} // End if $db_location is CDN
+
+// If there is an ERROR with the CDN, try to use
+// a "local" spambotblocker piece of content
+if ($cdn_error) {
+  // DB Query gets random node
+  $node = spam_bot_blocker_get_challenge();
+  $spam_bot_blocker_img_location = 'local';
+}
+// If "Local" also has nothing
+if ($node == 'nodata') { // 'nodata' maybe be returned by local
+$ok = FALSE;
+$error_message = '';
+  if ($cdn_error) {
+    $error_message .= '<p>CDN attempted first, but failed (with messages below).</p>';
+    $error_message .= $error_message_cdn;
+    $error_message .= '<p>As a "Fall-Back", Local "SpamBotBlocker" content attempted to load but failed.  There is no "SpamBotBlocker" content on this site. It\'s a good idea to always create at least a couple local "SpamBotBlocker" content as a fall-back when the CDN fails.</p>';
+
+    }
+    else{
+      $error_message .= '<h4>SpamBotBlocker CAPTCHA NOT in place!</h4>';
+      $error_message .= '<p>Local "SpamBotBlocker" content attempted to load but failed. There is no "SpamBotBlocker" content on this site. If your going to use local content, you must create it first.</p>';
+      $error_message .= '<ol style="margin-left:50px;">Either,<li>Create Spam Bot Blocker content on this site</li><li>use the SpamBotBlocker.com CND</li><li>use a different CAPTCHA</li></ol>';
+    }
+}
+
+if ($ok) {
+
+if (key_exists('und', $node->field_sbb_question)) {
+  $question = $node->field_sbb_question['und'][0]['value'];
+  $question = '<p id="spam_bot_blocker_question">' . $question . '</p>';
+}
+
+
+$array_answers = array();
+
+if (key_exists('und', $node->field_sbb_possible_answers)) {
+$a = explode(',', $node->field_sbb_possible_answers['und'][0]['value']);
+
+  foreach ($a as $b) {
+    $c = trim($b);
+    $d = str_replace(' ', '_', $c);
+    $d = strtolower($d);
+    $array_answers[$d] = $c;
+  }
+}
+
+// On every load of "same" challenge, "randomize" the array so
+// the answers are in a different position
+// echo '<pre>';var_dump($array_answers);echo '<pre>';
+// Can't just "shuffle" or will lose keys
+// shuffle($array_answers);
+
+$shuffled_array = array();
+
+$keys = array_keys($array_answers);
+shuffle($keys);
+
+foreach ($keys as $key){
+    $shuffled_array[$key] = $array_answers[$key];
+}
+// Reset $array_answers to the "shuffled" array
+$array_answers = $shuffled_array;
+
+// echo '<pre>';var_dump($array_answers);echo '<pre>';
+
+// ===== START Get/Generate the Image HTML ========
+if (key_exists('und', $node->field_sbb_image)) {
+  if ($spam_bot_blocker_img_location == 'local') {
+    $bs_image = $node->field_sbb_image['und'][0]['uri'];
+    // D7 Method
+		//$bs_image = theme('image_style', array('style_name' => 'spam_bot_blocker_image', 'path' => $bs_image, 'getsize' => FALSE, 'attributes' => array('class' => '', 'style' => 'max-width:100%;')));
+		$bs_image = theme('image_style', array('style_name' => 'spam_bot_blocker_image', 'uri' => $bs_image, 'alt' => 'SpamBotBlocker.com Image', 'title' => 'Challenge', 'attributes' => array('class' => '','style' => 'max-width:100%;')));
+
+	}
+  else{
+		//var_dump();
+		//debug($node->field_sbb_image);
+    $bs_image = '<img class="" typeof="foaf:Image" src="' . $node->field_sbb_image['und'][0]['value'] . '">';
+  
+	}
+}
+// ===== END Get/Generate the Image HTML ========
+
+if (key_exists('und', $node->field_sbb_correct_answer)) {
+  $bs_correct = $node->field_sbb_correct_answer['und'][0]['value'];
+}
+
+ob_start();
+?>
+
+<div id="sbb_wrapper">
+
+<?php
+// START, "TERMS OF USE" NOTICE ========================
+// If using the SpamBotBlocker.com CDN this code CANNOT be
+// removed or altered. The CSS that displays this code CANNOT
+// be removed or altered. I.E. the Ad MUST DISPLAY.
+// Please review the "TERMS OF USE" at:
+// http://www.spambotblocker.com/page/terms-use-and-privacy-policy
+// Section: "Using the CDN"
+if ($spam_bot_blocker_img_location != 'local') {
+echo '<div id="sbb_html_col1">';
+echo '<p class="sbb_center sbb_col_header_p"><span class="sbb_col_header sbb_center">Sponsor</span> <span class="sbb_houkoku">click to open in new window</span></p>';
+if($houkoku) {echo $houkoku;}
+echo '</div>';
+}
+// END, "TERMS OF USE" NOTICE ==========================
+?>
+
+<div id="sbb_html_col2">
+<p class="sbb_col_header_p sbb_center"><span class="sbb_col_header sbb_center">Question Image</span></p>
+<?php
+echo $bs_image;
+?>
+</div>
+
+<?php
+$html_1 = ob_get_clean();
+ob_start();
+?>
+<div style="clear:both;"></div>
+
+<?php
+if ($spam_bot_blocker_img_location != 'local') {
+echo '<p style="font-size:12px;text-align:center;margin:5px;">CAPTCHA provided by <a href="http://www.spambotblocker.com/" target="_blank">SpamBotBlocker.com</a></p>';
+}
+?>
+
+<?php
+if ($expose_errors) {
+  if ($cdn_error) {
+    $error_message .= '<p>CDN attempted first, but failed (with messages below).</p>';
+    $error_message .= $error_message_cdn;
+    echo $error_message;
+  }
+}
+?>
+
+</div><!-- spam_bot_blocker_wrapper -->
+<?php
+$html_2 = ob_get_clean();
+
+// D7
+// if (variable_get('spam_bot_blocker_use_honey', '') == 1) {
+$temp = $config->get('use_honey');	
+if ($temp == 1) {
+  // D7
+	// $temp = variable_get('spam_bot_blocker_honey_name', '');
+	$temp = $config->get('honey_name');
+  $captcha['form'][$temp] = array(
+    '#prefix' => '<div id="spam_bot_blocker_hachimitsu">',
+    '#suffix' => '</div>',
+    '#type' => 'textfield',
+    '#title' => t('User'),
+    '#size' => 60,
+    '#maxlength' => 60,
+    '#weight' => 1
+  );
+}
+
+  $captcha['form']['spam_bot_blocker_html_1'] = array(
+    '#title' => t('Instructions'),
+    '#markup' => $html_1,
+    '#weight' => 2
+  );
+
+  $captcha['form']['captcha_response'] = array(
+    '#prefix' => '<div id="sbb_html_col3"><p class="sbb_center sbb_col_header_p"><span style="color:red">*</span><span class="sbb_col_header">Best Answer</span></p>' . $question,
+    '#suffix' => '</div>',
+    '#type' => 'radios',
+    '#options' => $array_answers,
+    '#title' => t('Answer'),
+    '#required' => TRUE,
+    '#default_value' => NULL,
+    '#validated' => TRUE,
+    '#weight' => 3
+  );
+
+  $captcha['form']['spam_bot_blocker_html_2'] = array(
+    '#title' => t('Instructions'),
+    '#markup' => $html_2,
+    '#weight' => 4
+  );
+
+  //Validate
+  $captcha['solution'] = $bs_correct;
+  $captcha['captcha_validate'] = 'spam_bot_blocker_custom_validation';
+}
+else{
+
+  echo '<div style="background:white;margin:10px;padding:10px;border:2px solid red;color:black;text-align:left;">';
+  echo '<h3 style="text-align:center;">CAPTCHA Generate Error</h3>';
+  echo '<h4 style="text-align:center;"><span style="color:red;">CAPTCHA is NOT working</span>. Admin, see messages below:</h4>';
+  echo '<br />';
+  echo $error_message;
+  echo '</div>';
+
+
+  // for some reason CAPTCHA failed.
+  // generate a generic warning form
+  $html = '';
+  ob_start();
+  ?>
+	<p style="text-align:center;">CAPTCHA Generate Error</p>
+	<?php
+$html .= ob_get_clean();
+  $captcha['form']['captcha_generate_error'] = array(
+    '#title' => t('CAPTCHA Generate Error'),
+    '#markup' => $html,
+    '#weight' => 1
+  );
+}
+
+return $captcha;
+} // ===== END Function ==================
+
+
+/**
+ * Implements hook_custom_validation().
+ */
+function spam_bot_blocker_custom_validation($solution, $response, $element, &$form_state) {
+global $base_path;
+
+$config = config('spam_bot_blocker.settings');
+
+$bs_form_id = $form_state["build_info"]["form_id"];
+
+// 1.) ===== Check the Pot First =========
+// D7
+// if (variable_get('spam_bot_blocker_use_honey', '') == 1) {
+$temp = $config->get('use_honey');
+if ($temp == 1) {
+// D7
+// $bs_honey_name = variable_get('spam_bot_blocker_honey_name', '');
+$bs_honey_name = $config->get('honey_name');
+$a = '';
+$a = $form_state['values'][$bs_honey_name];
+  if ($a) {
+		// D7
+    // $bs_redirect_type = variable_get('spam_bot_blocker_redirect_type', '');
+		$bs_redirect_type = $config->get('redirect_type');
+    if ($bs_redirect_type == 1) {
+      $url = 'spam_bot_blocker/ban';
+      backdrop_goto($url);
+    }
+    elseif ($bs_redirect_type == 2) {
+			// D7
+      // $url = variable_get('spam_bot_blocker_redirect_ban', '');
+			$url = $config->get('redirect_ban');
+      backdrop_goto($url);
+    }
+    else{
+      spam_bot_blocker_send_bots_packing();
+    }
+  }
+}
+
+// 2.) ===== Check Question/Answer =======
+
+$user_answer = '';
+$user_answer = $form_state["input"]['captcha_response'];
+
+$user_answer = str_replace('_', ' ', $user_answer);
+$user_answer = trim($user_answer);
+
+$solution = strtolower($solution);
+$solution = trim($solution);
+
+$fail = TRUE;
+
+if ($user_answer == $solution) {
+  $fail = FALSE;
+}
+else{
+  $fail = TRUE;
+}
+
+$ip = spam_bot_blocker_get_ip();
+
+if ($fail) {
+// Insert IP record to sbbfails
+
+// === INSERT into DB ================
+$nid = db_insert('sbbfails') // Table name no longer needs {}
+->fields(array(
+'form_id' => $bs_form_id,
+'ip' => $ip,
+))
+->execute();
+
+// ===== Now Count Total =============
+// Backdrop 7 argument substitution SQL
+$q = "";
+$q .= "SELECT i.ip AS bs_ip FROM {sbbfails} i ";
+$q .= "WHERE :ip = i.ip";
+$result = db_query($q, array(':ip' => $ip));
+
+$count = $result->rowCount();
+
+// D7
+// $bs_fail_max = variable_get('spam_bot_blocker_fails', '');
+$bs_fail_max = $config->get('fails');
+
+// ===== If more than fails allowed, add to
+// ===== deny table
+if ($count >= $bs_fail_max) {
+  $bs_fail_type = 'deny';
+  // Add IP to deny table
+  $a = time();
+  $nid = db_insert('sbbdeny') // Table name no longer needs {}
+  ->fields(array(
+  'ip' => $ip,
+  'timestamp' => $a,
+  ))
+  ->execute();
+
+// ===== remove fails
+  // Delete all of same ip from fail table
+  $num_deleted = db_delete('sbbfails')
+  ->condition('ip', $ip)
+  ->execute();
+
+  // Backdrop 7 argument substitution SQL
+  // Either Add a record to sbbban OR
+  // Add a +1 to the count
+  $q = "";
+  $q .= "INSERT INTO {sbbban} (ip) ";
+  $q .= "VALUES (:ip) ";
+  $q .= "ON DUPLICATE KEY UPDATE count = count+1";
+  $result = db_query($q, array(':ip' => $ip));
+
+  // if "count" greater than maximum "Major Fails"
+  // need to clear the sbbdeny and sbbban
+  // tables
+  // AND
+  // Set $bs_fail_type to 'ban'
+  $result = spam_bot_blocker_get_sbbban($ip);
+	// D7
+  // $temp = variable_get('spam_bot_blocker_max_fails_ban', '');
+	$temp = $config->get('max_fails_ban');
+    foreach ($result as $row) {
+      if ($row->bs_count >= $temp) {
+        db_delete('sbbfails')
+        ->condition('ip', $ip)
+        ->execute();
+        db_delete('sbbdeny')
+        ->condition('ip', $ip)
+        ->execute();
+        
+      $bs_fail_type = 'ban';        
+      }
+    }
+
+  // Send Packing
+  // Old function that sent to
+  // YouTube Vids
+  if ($bs_fail_type == 'deny') {
+		  // D7
+      // $bs_redirect_type = variable_get('spam_bot_blocker_redirect_type', '');
+				$bs_redirect_type = $config->get('redirect_type');
+    if ($bs_redirect_type == 1) {
+      $url = 'spam_bot_blocker/fail';
+    }
+    else{
+			// D7
+      // $url = variable_get('spam_bot_blocker_redirect', '');
+			$url = $config->get('redirect');
+    }
+    backdrop_goto($url);
+  }
+  elseif($bs_fail_type == 'ban'){
+		// D7
+    // $bs_redirect_type = variable_get('spam_bot_blocker_redirect_ban_type', '');
+		$bs_redirect_type = $config->get('redirect_ban_type');
+      if ($bs_redirect_type == 1) {
+        $url = 'spam_bot_blocker/ban';
+      }
+      else{
+				// D7
+        // $url = variable_get('spam_bot_blocker_redirect_ban', '');
+				$url = $config->get('redirect_ban');
+      }
+    backdrop_goto($url);
+  }
+  else{
+    echo '';
+  }
+} // End if over max fails
+
+// "unset" the "captcha_response" field so goes
+// "blank" again when/if returns
+form_set_error('captcha_response', t('You answered the CAPTCHA question incorrectly, please try again.'));
+return FALSE;
+}
+else{
+// Since the visitor "passed", remove all records
+// from the sbbfails, sbbdeny and sbbban tables
+  db_delete('sbbfails')
+  ->condition('ip', $ip)
+  ->execute();
+  db_delete('sbbdeny')
+  ->condition('ip', $ip)
+  ->execute();
+  db_delete('sbbban')
+  ->condition('ip', $ip)
+  ->execute();
+  return TRUE;
+}
+
+} // ===== END Function ==================
+
+
+/**
+ * Implements hook_cron().
+ */
+function spam_bot_blocker_cron() {
+	// D7
+  // $purge_records_before = variable_get('spam_bot_blocker_purge_deny', '');
+	//$purge_records_before = $config->get('purge_deny');
+	// Actually... don't need the whole object here... just 1 variable
+	$purge_records_before = config_get('spam_bot_blocker.settings','purge_deny');
+  $purge_records_before = time() - $purge_records_before;
+  $num_deleted = db_delete('sbbdeny')
+  ->condition('timestamp', $purge_records_before, '<')
+  ->execute();
+} // ===== END Function ==================
+
+/**
+ * =======================================
+ * SEND BOTS PACKING
+ *
+ */
+function spam_bot_blocker_send_bots_packing() {
+
+	// Actually... don't need the whole object here... just 1 variable
+	$redirect_ban_url = config_get('spam_bot_blocker.settings','redirect_ban');
+
+    // make HTTP call to SpamBotBlocker for
+    // Random YT video
+    $options = array();
+    $options['method'] = 'POST';
+    $options['headers'] = array('Content-Type' => 'application/x-www-form-urlencoded');
+    $options['data'] = new stdClass();
+    $options['data']->request = 'send_packing';
+    $options['data']->code = CODE;
+    $options['data'] = http_build_query($options['data']);
+    $response = backdrop_http_request(SBB_SEND_PACKING_URL, $options);
+    if ($response->code == 200) {
+      $url = $response->data;
+      if ($url == 'ERROR_SEND_PACKING_0001') {
+				// D7
+        // $url = variable_get('spam_bot_blocker_redirect_ban', '');
+				$url = $redirect_ban_url;
+      }
+    }
+    else {
+			// D7
+      // $url = variable_get('spam_bot_blocker_redirect_ban', '');
+			$url = $redirect_ban_url;
+    }
+    backdrop_goto($url);
+}// ===== END Function ==================
+
+
+/**
+ * ======================================
+ * Seconds(UNIX TimeStamp) to Time
+ *
+ */
+function spam_bot_blocker_seconds_to_time($seconds) {
+  // Extract days
+  $days = floor($seconds / 86400);
+
+  // Extract hours
+  $divisor_hours = $seconds % 86400;
+  $hours = floor($divisor_hours / 3600);
+
+  // Extract minutes
+  $divisor_minutes = $seconds % 3600;
+  $minutes = floor($divisor_minutes / 60);
+
+  // Extract the remaining seconds
+  $divisor_seconds = $divisor_minutes % 60;
+  $seconds = floor($divisor_seconds);
+
+  $days = (int) $days;
+  $hours = (int) $hours;
+  $minutes = (int) $minutes;
+  $seconds = (int) $seconds;
+
+  $html = '';
+
+  $multiple = '';
+  if (!empty($days)) {
+    if ($days > 1) {
+      $multiple = 's';
+    }
+  $html .= $days . ' day' . $multiple . ', ';
+  }
+
+  $multiple = '';
+  if (!empty($hours)) {
+    if ($hours > 1) {
+      $multiple = 's';
+    }
+  $html .= $hours . ' hour' . $multiple . ', ';
+  }
+
+  $multiple = '';
+  if (!empty($minutes)) {
+    if ($minutes > 1) {
+      $multiple = 's';
+    }
+  $html .= $minutes . ' minute' . $multiple;
+  }
+
+  //$timeleft = array(
+  //	"d" => (int) $days,
+  //	"h" => (int) $hours,
+  //	"m" => (int) $minutes,
+  //	"s" => (int) $seconds,
+  //);
+
+  return $html;
+}// ===== END Function ==================
+
+
+/**
+ * ======================================
+ * GET CHALLENGE
+ *
+ */
+function spam_bot_blocker_get_challenge($db = 'local', $lang = 15, $cat = 'any', $call_for_html = FALSE, $key = '', $this_url = '') {
+
+  if ($db == 'local') {
+    $q = "";
+    $q .= "SELECT n.nid FROM {node} n ";
+    $q .= "WHERE n.type = 'spam_bot_blocker' ";
+    $q .= "AND n.status = 1";
+    //$q .= "ORDER BY RAND() ";
+    //$q .= "LIMIT 1";
+    $result = db_query($q);
+
+    $count = $result->rowCount();
+  if ($count > 0) {
+    if ($result) {
+      // instead of MySQL getting a RAND, it is
+      // said that PHP does it faster
+			// So just build an array of NIDs of all the
+			// Spam Bot Blocker Content Types
+      $array_temp = array();
+      foreach ($result as $row) {
+        $array_temp[] = $row->nid;
+      }
+			// Randomly get one of those nodes from the
+			// array created above
+      $node = array_rand($array_temp);
+      $node = node_load($array_temp[$node]);
+    }
+  }
+    else{
+    $node = 'nodata';
+    }
+	// Return the whole node
+  return $node;
+  }
+  else{
+  // Uses HTTP Request to get HTML
+
+  if ($call_for_html) {
+    $options = array();
+    $options['method'] = 'POST';
+    $options['headers'] = array('Content-Type' => 'application/x-www-form-urlencoded');
+    $options['data'] = new stdClass();
+    $options['data']->key = $key;
+    $options['data']->this_url = $this_url;
+    $options['data']->lang = $lang;
+    $options['data']->code = CODE;
+
+    $options['data'] = http_build_query($options['data']);
+    $response = backdrop_http_request(SBB_CHALLENGE_URL, $options);
+
+    if ($response->code == 200) {
+    return $response->data;
+    }
+    else {
+    $node = 'bad_response';
+    return $node;
+    }
+  } // End if ask  
+  
+  }
+}// ===== END Function ==================
+
+/**
+ * =================================
+ * GET LANGUAGES
+ *
+ *
+ */
+function spam_bot_blocker_get_language() {
+
+  $options = array();
+  $options['method'] = 'POST';
+  $options['headers'] = array('Content-Type' => 'application/x-www-form-urlencoded');
+  $options['data'] = new stdClass();
+  $options['data']->request = 'get_languages';
+  $options['data']->code = CODE;
+
+  $options['data'] = http_build_query($options['data']);
+  $response = backdrop_http_request(SBB_LANG_URL, $options);
+
+  if ($response->code == 200) {
+		return $response->data;
+  }
+  else {
+    $string = 'bad_response';
+    return $string;
+  }
+}
+
+/**
+ * ====================================
+ * GET IP
+ *
+ *
+ */
+function spam_bot_blocker_get_ip() {
+// ===== START Capture IP ==============
+if (isset($_SERVER["REMOTE_ADDR"])) {
+$ip = $_SERVER["REMOTE_ADDR"];
+}
+elseif (isset($_SERVER["HTTP_X_FORWARDED_FOR"]) ) {
+$ip = $_SERVER["HTTP_X_FORWARDED_FOR"];
+}
+elseif (isset($_SERVER["HTTP_CLIENT_IP"])) {
+$ip = $_SERVER["HTTP_CLIENT_IP"];
+}
+else{
+$ip = '';
+}
+return $ip;
+}
+
+/**
+ * =====================================
+ * GET SBB BAN
+ *
+ */
+function spam_bot_blocker_get_sbbban($ip) {
+  $q = "";
+  $q .= "SELECT i.ip AS bs_ip, i.count AS bs_count FROM {sbbban} i ";
+  $q .= "WHERE :ip = i.ip";
+  $result = db_query($q, array(':ip' => $ip));
+return $result;
+}

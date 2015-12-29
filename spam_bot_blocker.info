@@ -1,0 +1,16 @@
+; $Id: spam_bot_blocker,v 1.0 2015/12/24 15:09:00 BSCOOL Exp $
+backdrop = 1.x
+description = A CAPTCHA ("Spam Bot Blocker") that is filled with content by you or the SpamBotBlocker.com online CDN service
+name = Spam Bot Blocker
+
+package = "Spam control"
+
+dependencies[] = captcha
+
+stylesheets[all][] = spam_bot_blocker.css
+
+configure = admin/config/people/captcha/spam_bot_blocker
+
+version = "1.x-1.0.1"
+backdrop = 1.x
+project = "Spam Bot Blocker"
