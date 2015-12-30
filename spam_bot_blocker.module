@@ -15,7 +15,7 @@ spam_bot_blocker_config_info
 spam_bot_blocker_permission
 spam_bot_blocker_theme
 spam_bot_blocker_menu
-// REMOVED in BackDrop > spam_bot_blocker_image_default_styles
+// spam_bot_blocker_image_default_styles >>> REMOVED in BackDrop. Backdrop uses a "config" file
 spam_bot_blocker_captcha
 spam_bot_blocker_form_alter
 spam_bot_blocker_node_presave
@@ -57,26 +57,12 @@ function spam_bot_blocker_config_info() {
 	*/
   // If this configuration file points to one particular file, a "name" key
   // will display that exact string for that file.
-  $prefixes['spam_bot_blocker.settings.json'] = array(
+  $prefixes['spam_bot_blocker.settings'] = array(
     'label' => t('Spam Bot Blocker Settings'),
     'group' => t('Configuration'),
   );
   return $prefixes;
 }
-
-/**
- * Implements hook_config_info().
- */
- /*
-function spam_bot_blocker_config_info() {
-  $prefixes['image.style.spam_bot_blocker_image'] = array(
-    'label' => t('Image Style'),
-    'group' => t('Spam Bot Blocker'),
-  );
-
-  return $prefixes;
-}
-*/
 
 
 /**
@@ -186,60 +172,6 @@ function spam_bot_blocker_menu() {
 return $items;
 } // ===== END Function ==================
 
-/**
- * Implements hook_default_styles().
- *
- * REMOVED IN BACKDROP for config files. See:
- * spam_bot_blocker_config_info
- */
-
-/*
-function spam_bot_blocker_image_default_styles() {
-  $styles = array();
-
-
-// This works perfectly, leaves no black on the top or bottom
-  $styles['spam_bot_blocker_image'] = array(
-    'name' => 'spam_bot_blocker_image',
-    'effects' => array(
-      7 => array(
-        'label' => 'Scale and crop',
-        'help' => 'Scale and crop will maintain the aspect-ratio of the original image, then crop the larger dimension. This is most useful for creating perfectly square thumbnails without stretching the image.',
-        'effect callback' => 'image_scale_and_crop_effect',
-        'dimensions callback' => 'image_resize_dimensions',
-        'form callback' => 'image_resize_form',
-        'summary theme' => 'image_resize_summary',
-        'module' => 'image',
-        'name' => 'image_scale_and_crop',
-        'data' => array(
-          'width' => 300,
-          'height' => 250,
-        ),
-        'weight' => 1,
-      ),
-    ),
-    'label' => 'spam_bot_blocker_image',
-  );
-
-  $styles['spam_bot_blocker_image'] = array(
-		'label' => 'Spam Bot Blocker Image',
-    'effects'   => array(
-      array(
-        'name'  => 'image_scale',
-        'data'  => array(
-					'width'     => 300,
-					'height'    => 250,
-					'upscale' => 1
-        ),
-        'weight'    => 0
-      )
-    )
-  );
-
-
-  return $styles;
-} // ===== END Function ==================
-*/
 
 /**
  * Implements hook_captcha().
@@ -596,8 +528,9 @@ ob_start();
 
 <?php
 // START, "TERMS OF USE" NOTICE ========================
-// If using the SpamBotBlocker.com CDN this code CANNOT be
-// removed or altered. The CSS that displays this code CANNOT
+// If using the SpamBotBlocker.com CDN (and not locally created content)
+// this code CANNOT be removed or altered.
+// The CSS that displays this code CANNOT
 // be removed or altered. I.E. the Ad MUST DISPLAY.
 // Please review the "TERMS OF USE" at:
 // http://www.spambotblocker.com/page/terms-use-and-privacy-policy
