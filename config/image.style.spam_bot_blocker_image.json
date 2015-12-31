@@ -1,6 +1,6 @@
 {
     "_config_name": "image.style.spam_bot_blocker_image.json",
-    "storage": 1,
+    "storage": 4,
     "module": "spam_bot_blocker",
     "label": "Spam Bot Blocker Image",
     "name": "spam_bot_blocker_image",
