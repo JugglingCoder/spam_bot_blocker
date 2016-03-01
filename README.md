@@ -72,11 +72,11 @@ complete text.
 Current Maintainers
 ----------------------------
 
-- BSCOOL (https://github.com/JugglingCoder/)
+- BSCOOL (JugglingCoder) (https://github.com/JugglingCoder/, http://www.thedreamchest.com/)
 
 
 Credits
 ----------------------------
 
-- Ported to Backdrop CMS by BSCOOL (https://github.com/JugglingCoder).
-- Originally written for Drupal 7 by BSCOOL (https://github.com/JugglingCoder).
+- Ported to Backdrop CMS by BSCOOL (JugglingCoder) (https://github.com/JugglingCoder/, http://www.thedreamchest.com/)
+- Originally written for Drupal 7 by BSCOOL (JugglingCoder) (https://github.com/JugglingCoder/, http://www.thedreamchest.com/)
