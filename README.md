@@ -38,7 +38,7 @@ look exactly the same).
 
 http://www.snapjapan.com/contact-us
 
-http://www.thedreamchest.com/form/contact-us
+http://www.thedreamchest.com/form/contact
 
 http://www.cloudbrat.com/form/contact-us
 
